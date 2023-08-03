@@ -74,12 +74,15 @@ jobs:
       - name: Create staging branch (if not exists)
         run: git show-ref --verify --quiet refs/heads/staging || git branch staging
 
+      - name: Fetch the remote changes
+        run: git fetch origin
+
       - name: Merge main into staging
         if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
         run: |
           echo Start merge,
           git checkout staging
-          git merge main
+          git merge origin/staging --no-edit
           git push origin staging
 
           # Get the new version from the build job output
