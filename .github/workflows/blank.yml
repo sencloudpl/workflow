@@ -40,3 +40,26 @@ jobs:
       run: |
         git tag -a ${{ steps.increment_version.outputs.next_version }} -m "Release ${{ steps.increment_version.outputs.next_version }}"
         git push origin ${{ steps.increment_version.outputs.next_version }}
+
+    - name: Request manual deployment approval
+      uses: trstringer/manual-approval@v1
+      with:
+        token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
+        message: "Please approve the deployment to staging"
+        reviewers: "${{ github.actor }}"
+        event: "deploy-frontend-approved"
+        id: approval
+
+    - name: Check approval status
+      run: |
+        if [[ "${{ steps.approval.outputs.approved }}" != "true" ]]; then
+          echo "Deployment was not approved. Aborting."
+          exit 1
+        else
+          echo "Deployment approved. Proceeding with deployment."
+        fi
+
+    - name: Deploy to staging
+      run: |
+        true
+
