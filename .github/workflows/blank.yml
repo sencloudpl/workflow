@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      deploy_approval:
+        description: 'Approve deployment to staging environment'
+        required: true
+        default: 'NO'
 
 jobs:
   build:
@@ -40,7 +46,7 @@ jobs:
         echo "::set-output name=new_version::$new_version" >> $GITHUB_ENV
 
     - name: Set deploy_approval input
-      run: echo "deploy_approval=YES" >> $GITHUB_ENV
+      run: echo "deploy_approval=${{ github.event.inputs.deploy_approval }}" >> $GITHUB_ENV
 
   staging-approval:
     runs-on: ubuntu-latest
@@ -54,20 +60,15 @@ jobs:
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if [[ "${{ needs.build.outputs.latest_tag }}" == "0.0.0" ]]; then
-            echo "No tags found in the repository. Deploying to staging is approved by default."
-          else
-            echo "Do you want to deploy to staging environment? (YES/NO)"
-            read -r confirmation
+          deploy_approval=${{ env.deploy_approval }}
 
-            if [[ $confirmation == "YES" ]]; then
-              echo "Staging deployment is approved."
-              echo "Proceeding with the deployment..."
-            else
-              echo "Staging deployment is not approved."
-              echo "Skipping the staging deployment..."
-              exit 0
-            fi
+          if [[ "$deploy_approval" == "YES" ]]; then
+            echo "Staging deployment is approved."
+            echo "Proceeding with the deployment..."
+          else
+            echo "Staging deployment is not approved."
+            echo "Skipping the staging deployment..."
+            exit 0
           fi
 
       - name: Merge main into staging
