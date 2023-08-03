@@ -21,7 +21,7 @@ jobs:
 
     - name: Set up Git
       run: |
-        git config --global user.name "Mamadou Sadio"
+        git config --global user.name "${{ github.actor }}"
         git config --global user.email "devmodou@gmail.com"
 
     - name: Get the latest tag
