@@ -40,7 +40,6 @@ jobs:
             echo "Staging deployment is not confirmed."
             echo "Skipping the staging approval and deployment..."
             echo "NO" >> $GITHUB_ENV
-            exit 0  # Exit successfully if deployment is not confirmed
           fi
 
   staging-approval:
@@ -48,23 +47,28 @@ jobs:
     environment: 'Staging'
     needs:
       - staging-check
+    if: env.STAGING_DEPLOY_CONFIRMED == 'YES'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Check if staging deployment is confirmed
+
+      - name: Ask for staging deployment approval
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
-          if [[ "${{ env.STAGING_DEPLOY_CONFIRMED }}" == "YES" ]]; then
-            echo "Staging deployment is confirmed. Proceeding with the approval..."
+          echo "Do you want to deploy to staging environment? (YES/NO)"
+          read -r confirmation
+
+          if [[ $confirmation == "YES" ]]; then
+            echo "Staging deployment is approved."
+            echo "Proceeding with the deployment..."
           else
-            echo "Staging deployment is not confirmed. Skipping the staging approval and deployment..."
-            exit 1  # Exit with an error if deployment is not confirmed
+            echo "Staging deployment is not approved."
+            echo "Skipping the staging deployment..."
+            exit 0
           fi
 
-      - name: Wait for approval
-        run: |
-          sleep 5m
-
       - name: Merge master into staging
+        if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
         run: |
           echo Start merge,
           git checkout staging
