@@ -47,10 +47,17 @@ jobs:
     environment: 'Staging'
     needs:
       - staging-check
-    if: env.STAGING_DEPLOY_CONFIRMED == 'YES'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Check if staging deployment is confirmed
+        run: |
+          if [[ "${{ env.STAGING_DEPLOY_CONFIRMED }}" == "YES" ]]; then
+            echo "Staging deployment is confirmed. Proceeding with the approval..."
+          else
+            echo "Staging deployment is not confirmed. Skipping the staging approval and deployment..."
+            exit 1
+          fi
 
       - name: Wait for approval
         run: |
