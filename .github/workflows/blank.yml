@@ -54,7 +54,7 @@ jobs:
           git checkout staging
           git merge main
           git push origin staging
-        else:
-          run: |
-            echo "Staging deployment is not approved."
-            echo "Skipping the staging deployment..."
+        # else: 
+        #   run: |
+        #     echo "Staging deployment is not approved."
+        #     echo "Skipping the staging deployment..."
