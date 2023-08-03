@@ -1,4 +1,4 @@
-name: Manual Approv and Create Tag
+name: Manual Approve and Create Tag
 
 on:
   push:
@@ -17,44 +17,48 @@ jobs:
       run: |
         git config --global user.name "Mamadou Sadio"
         git config --global user.email "devmodou@gmail.com"
-            
-    # - uses: trstringer/manual-approval@v1
-    #   with:
-    #     secret: ${{ github.TOKEN }}
-    #     approvers: sencloudpl
-    #     minimum-approvals: 1
-    #     issue-title: "Deploying v1.3.5 to prod from staging"
-    #     issue-body: "Please approve or deny the deployment of version v1.3.5."
-    #     exclude-workflow-initiator-as-approver: false
-    #     additional-approved-words: 'oui'
-    #     additional-denied-words: ''
 
-
-  staging-approval:
+  staging-check:
     runs-on: ubuntu-latest
-    environment: 'Staging'
     needs:
       - build
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Ask for staging deployment approval
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      - name: Ask for staging deployment confirmation
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Do you want to deploy to staging environment? (YES/NO)"
           read -r confirmation
-          echo "INPUT_APPROVAL=$confirmation" >> $GITHUB_ENV
 
-      - name: Check approval and proceed
-        if: env.INPUT_APPROVAL == 'YES'
+          if [[ $confirmation == "YES" ]]; then
+            echo "Staging deployment is confirmed."
+            echo "Proceeding with the staging approval..."
+            echo "YES" >> $GITHUB_ENV
+          else
+            echo "Staging deployment is not confirmed."
+            echo "Skipping the staging approval and deployment..."
+            echo "NO" >> $GITHUB_ENV
+          fi
+
+  staging-approval:
+    runs-on: ubuntu-latest
+    environment: 'Staging'
+    needs:
+      - staging-check
+    if: env.STAGING_DEPLOY_CONFIRMED == 'YES'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Wait for approval
         run: |
-          echo "Staging deployment is approved."
-          echo "Proceeding with the deployment..."
+          sleep 5m
+
+      - name: Merge master into staging
+        run: |
+          echo Start merge,
           git checkout staging
           git merge main
           git push origin staging
-        # else: 
-        #   run: |
-        #     echo "Staging deployment is not approved."
-        #     echo "Skipping the staging deployment..."
