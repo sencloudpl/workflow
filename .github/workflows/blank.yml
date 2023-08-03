@@ -39,6 +39,9 @@ jobs:
         echo "New version: $new_version"
         echo "::set-output name=new_version::$new_version" >> $GITHUB_ENV
 
+    - name: Set deploy_approval input
+      run: echo "deploy_approval=YES" >> $GITHUB_ENV
+
   staging-approval:
     runs-on: ubuntu-latest
     environment: 'Staging'
@@ -51,20 +54,24 @@ jobs:
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "Do you want to deploy to staging environment? (YES/NO)"
-          read -r confirmation
-
-          if [[ $confirmation == "YES" ]]; then
-            echo "Staging deployment is approved."
-            echo "Proceeding with the deployment..."
+          if [[ "${{ needs.build.outputs.latest_tag }}" == "0.0.0" ]]; then
+            echo "No tags found in the repository. Deploying to staging is approved by default."
           else
-            echo "Staging deployment is not approved."
-            echo "Skipping the staging deployment..."
-            exit 0
+            echo "Do you want to deploy to staging environment? (YES/NO)"
+            read -r confirmation
+
+            if [[ $confirmation == "YES" ]]; then
+              echo "Staging deployment is approved."
+              echo "Proceeding with the deployment..."
+            else
+              echo "Staging deployment is not approved."
+              echo "Skipping the staging deployment..."
+              exit 0
+            fi
           fi
 
       - name: Merge main into staging
-        if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
+        if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
         run: |
           echo Start merge,
           git checkout staging
