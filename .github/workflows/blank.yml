@@ -18,28 +18,21 @@ jobs:
         git config --global user.name "Mamadou Sadio"
         git config --global user.email "devmodou@gmail.com"
 
-    - name: Get latest tag
-      id: latest_tag
+    - name: Increment version or create new tag
+      id: increment_or_create_tag
       run: |
-        git fetch --tags
-        latestTag=$(git describe --abbrev=0 --tags "0.0.0.*" 2>/dev/null) || latestTag="0.0.0.0"
-        echo "Latest tag: $latestTag"
-        echo "::set-output name=latest_tag::$latestTag"
+        # Retrieve the latest tag (if exists)
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
 
-    - name: Increment version
-      id: increment_version
-      run: |
-        previousTag=${{ steps.latest_tag.outputs.latest_tag }}
-        IFS='.' read -r -a versionParts <<< "${previousTag}"
-        nextVersion=$(printf "%d.%d.%d.%d" "${versionParts[0]}" "${versionParts[1]}" "${versionParts[2]}" "$((10#${versionParts[3]} + 1))")
-        echo "Next version: $nextVersion"
-        echo "::set-output name=next_version::$nextVersion"
-
-    - name: Create and push new tag
-      if: ${{ steps.increment_version.outputs.next_version != '0.0.0.0' }}
-      run: |
-        git tag -a ${{ steps.increment_version.outputs.next_version }} -m "Release ${{ steps.increment_version.outputs.next_version }}"
-        git push origin ${{ steps.increment_version.outputs.next_version }}
+        if [[ -n "$LATEST_TAG" ]]; then
+          IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+          NEW_PATCH_VERSION=$((VERSION_PARTS[3]+1))
+          NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}.$NEW_PATCH_VERSION"
+          echo "::set-output name=versioned_tag::$NEW_TAG"
+        else
+          NEW_TAG="0.0.0.1"
+          echo "::set-output name=versioned_tag::$NEW_TAG"
+        fi
 
     - name: Request manual deployment approval
       uses: trstringer/manual-approval@v1
