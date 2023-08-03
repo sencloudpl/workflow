@@ -71,6 +71,11 @@ jobs:
             exit 0
           fi
 
+      - name: Set up Git for the runner environment
+        run: |
+          git config user.name "Mamadou Sadio"
+          git config user.email "devmodou@gmail.com"
+
       - name: Fetch the remote changes
         run: git fetch origin
 
@@ -78,8 +83,8 @@ jobs:
         if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
         run: |
           echo Start merge,
-          git checkout staging
-          git merge origin/main --no-edit --allow-unrelated-histories
+          git checkout -b staging origin/staging
+          git merge origin/main --no-edit
           git push origin staging
 
           # Get the new version from the build job output
