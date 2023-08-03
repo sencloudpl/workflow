@@ -77,7 +77,7 @@ jobs:
       - name: Fetch the remote changes
         run: git fetch origin
 
-      - name: Merge main into staging
+      - name: Merge main into staging 
         if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
         run: |
           echo Start merge,
@@ -89,6 +89,6 @@ jobs:
           version="${{ needs.build.outputs.new_version }}"
           echo "New version: $version"
 
-          # Tag the merge commit with the new version
+          # Tag the merge commit with the new version v
           git tag "$version" "${{ github.sha }}"
           git push origin --tags
