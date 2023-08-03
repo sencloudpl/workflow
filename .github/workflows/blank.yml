@@ -39,6 +39,7 @@ jobs:
     
   staging-approval:
     runs-on: ubuntu-latest
+    environment: 'Staging'
     needs:
       - build
     steps:
