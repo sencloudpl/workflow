@@ -36,27 +36,34 @@ jobs:
     #     fi
 
     #     echo "::set-output name=versioned_tag::$NEW_TAG"
+    
+  staging-approval:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Create Manual Approval Issue
-      uses: toppulous/create-manual-approval-issue@v1
+      - name: Ask for staging deployment approval
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          echo "Do you want to deploy to staging environment? (YES/NO)"
+          read -r confirmation
 
-      with:
-        token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
-        message: "Please approve the deployment to staging"
-        reviewers: "${{ github.actor }}"
-        event: "deploy-frontend-approved"
-        id: approval
+          if [[ $confirmation == "YES" ]]; then
+            echo "Staging deployment is approved."
+            echo "Proceeding with the deployment..."
+          else
+            echo "Staging deployment is not approved."
+            echo "Skipping the staging deployment..."
+            exit 0
+          fi
 
-    - name: Check approval status
-      run: |
-        if [[ "${{ steps.approval.outputs.approved }}" != "true" ]]; then
-          echo "Deployment was not approved. Aborting."
-          exit 1
-        else
-          echo "Deployment approved. Proceeding with deployment."
-        fi
+      - name: Merge master into staging
+        if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
+        run: |
+           echo Start merge,
 
-    - name: Deploy to staging
-      run: |
-        true
+
 
