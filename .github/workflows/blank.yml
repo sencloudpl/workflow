@@ -17,38 +17,19 @@ jobs:
       run: |
         git config --global user.name "Mamadou Sadio"
         git config --global user.email "devmodou@gmail.com"
+            
+    # - uses: trstringer/manual-approval@v1
+    #   with:
+    #     secret: ${{ github.TOKEN }}
+    #     approvers: sencloudpl
+    #     minimum-approvals: 1
+    #     issue-title: "Deploying v1.3.5 to prod from staging"
+    #     issue-body: "Please approve or deny the deployment of version v1.3.5."
+    #     exclude-workflow-initiator-as-approver: false
+    #     additional-approved-words: 'oui'
+    #     additional-denied-words: ''
 
-    # - name: Increment version or create new tag
-    #   id: increment_or_create_tag
-    #   run: |
-    #     # Retrieve the latest tag (if exists)
-    #     LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
-    
-    #     if [[ -n "$LATEST_TAG" ]]; then
-    #       IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
-    #       NEW_PATCH_VERSION=$((VERSION_PARTS[3]+1))
-    #       NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}.$NEW_PATCH_VERSION"
-    #       echo "Latest Tag: $LATEST_TAG"
-    #       echo "New Tag: $NEW_TAG"
-    #     else
-    #       NEW_TAG="0.0.0.1"
-    #       echo "No Tags Found. Setting New Tag to: $NEW_TAG"
-    #     fi
-    
-    #     git tag "$NEW_TAG"
-    #     git push --tags
-    #     echo "::set-output name=versioned_tag::$NEW_TAG"
-    - uses: trstringer/manual-approval@v1
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: sencloudpl
-        minimum-approvals: 1
-        issue-title: "Deploying v1.3.5 to prod from staging"
-        issue-body: "Please approve or deny the deployment of version v1.3.5."
-        exclude-workflow-initiator-as-approver: false
-        additional-approved-words: 'oui'
-        additional-denied-words: ''
-    
+
   staging-approval:
     runs-on: ubuntu-latest
     environment: 'Staging'
@@ -63,31 +44,17 @@ jobs:
         run: |
           echo "Do you want to deploy to staging environment? (YES/NO)"
           read -r confirmation
+          echo "INPUT_APPROVAL=$confirmation" >> $GITHUB_ENV
 
-          if [[ $confirmation == "YES" ]]; then
-            echo "Staging deployment is approved."
-            echo "Proceeding with the deployment..."
-          else
-            echo "Staging deployment is not approved."
-            echo "Skipping the staging deployment..."
-            exit 0
-          fi
-
-      - name: Merge master into staging
-        if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
+      - name: Check approval and proceed
+        if: env.INPUT_APPROVAL == 'YES'
         run: |
-          echo Start merge,
+          echo "Staging deployment is approved."
+          echo "Proceeding with the deployment..."
           git checkout staging
           git merge main
           git push origin staging
-      
-
-
-
-
-
-
-
-
-
-
+        else:
+          run: |
+            echo "Staging deployment is not approved."
+            echo "Skipping the staging deployment..."
