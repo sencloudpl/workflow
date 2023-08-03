@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Ask for staging deployment confirmation
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           echo "Do you want to deploy to staging environment? (YES/NO)"
           read -r confirmation
@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Ask for staging deployment approval
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           echo "Do you want to deploy to staging environment? (YES/NO)"
           read -r confirmation
