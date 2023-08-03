@@ -40,6 +40,7 @@ jobs:
             echo "Staging deployment is not confirmed."
             echo "Skipping the staging approval and deployment..."
             echo "NO" >> $GITHUB_ENV
+            exit 0  # Exit successfully if deployment is not confirmed
           fi
 
   staging-approval:
@@ -56,7 +57,7 @@ jobs:
             echo "Staging deployment is confirmed. Proceeding with the approval..."
           else
             echo "Staging deployment is not confirmed. Skipping the staging approval and deployment..."
-            exit 1
+            exit 1  # Exit with an error if deployment is not confirmed
           fi
 
       - name: Wait for approval
