@@ -9,7 +9,7 @@ on:
       deploy_approval:
         description: 'Approve deployment to staging environment'
         required: true
-        default: 'YES'
+        default: 'NO'
 
 jobs:
   build:
@@ -70,6 +70,9 @@ jobs:
             echo "Skipping the staging deployment..."
             exit 0
           fi
+
+      - name: Create staging branch (if not exists)
+        run: git show-ref --verify --quiet refs/heads/staging || git branch staging
 
       - name: Merge main into staging
         if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
