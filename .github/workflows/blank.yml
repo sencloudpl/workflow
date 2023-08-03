@@ -1,4 +1,4 @@
-name: Manual Approval
+name: Manual Approval with Auto Tagging
 
 on:
   push:
@@ -18,6 +18,21 @@ jobs:
         git config --global user.name "Mamadou Sadio"
         git config --global user.email "devmodou@gmail.com"
 
+    - name: Get the latest tag
+      id: get_latest_tag
+      run: echo ::set-output name=latest_tag::$(git describe --abbrev=0 --tags)
+
+    - name: Determine next version
+      id: bump_version
+      run: |
+        # Split the version number into parts
+        IFS='.' read -r major minor patch build <<< "${{ steps.get_latest_tag.outputs.latest_tag }}"
+
+        # Increment the build number
+        build=$((build + 1))
+
+        # Set the new version as an output
+        echo ::set-output name=new_version::"$major.$minor.$patch.$build"
 
   staging-approval:
     runs-on: ubuntu-latest
@@ -29,7 +44,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Ask for staging deployment approval
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Do you want to deploy to staging environment? (YES/NO)"
           read -r confirmation
@@ -43,10 +58,18 @@ jobs:
             exit 0
           fi
 
-      - name: Merge master into staging
+      - name: Merge main into staging
         if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
         run: |
           echo Start merge,
           git checkout staging
           git merge main
           git push origin staging
+
+          # Get the new version from the build job output
+          version="${{ needs.build.outputs.new_version }}"
+          echo "New version: $version"
+
+          # Tag the merge commit with the new version
+          git tag "$version"
+          git push origin --tags
