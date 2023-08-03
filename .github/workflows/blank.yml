@@ -9,7 +9,7 @@ on:
       deploy_approval:
         description: 'Approve deployment to staging environment'
         required: true
-        default: 'NO'
+        default: 'YES'
 
 jobs:
   build:
