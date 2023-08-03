@@ -18,24 +18,27 @@ jobs:
         git config --global user.name "Mamadou Sadio"
         git config --global user.email "devmodou@gmail.com"
 
-    # - name: Increment version or create new tag
-    #   id: increment_or_create_tag
-    #   run: |
-    #     # Retrieve the latest tag (if exists)
-    #     LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+    - name: Increment version or create new tag
+      id: increment_or_create_tag
+      run: |
+        # Retrieve the latest tag (if exists)
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+    
+        if [[ -n "$LATEST_TAG" ]]; then
+          IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+          NEW_PATCH_VERSION=$((VERSION_PARTS[3]+1))
+          NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}.$NEW_PATCH_VERSION"
+          echo "Latest Tag: $LATEST_TAG"
+          echo "New Tag: $NEW_TAG"
+        else
+          NEW_TAG="0.0.0.1"
+          echo "No Tags Found. Setting New Tag to: $NEW_TAG"
+        fi
+    
+        git tag "$NEW_TAG"
+        git push --tags
+        echo "::set-output name=versioned_tag::$NEW_TAG"
 
-    #     if [[ -n "$LATEST_TAG" ]]; then
-    #       IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
-    #       NEW_PATCH_VERSION=$((VERSION_PARTS[3]+1))
-    #       NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}.$NEW_PATCH_VERSION"
-    #       echo "Latest Tag: $LATEST_TAG"
-    #       echo "New Tag: $NEW_TAG"
-    #     else
-    #       NEW_TAG="0.0.0.1"
-    #       echo "No Tags Found. Setting New Tag to: $NEW_TAG"
-    #     fi
-
-    #     echo "::set-output name=versioned_tag::$NEW_TAG"
     
   staging-approval:
     runs-on: ubuntu-latest
@@ -64,7 +67,18 @@ jobs:
       - name: Merge master into staging
         if: ${{ steps.staging-approval.outputs.approved == 'YES' }}
         run: |
-           echo Start merge,
+          echo Start merge,
+          git checkout staging
+          git merge main
+          git push origin staging
+      
+
+
+
+
+
+
+
 
 
 
