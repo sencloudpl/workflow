@@ -12,7 +12,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-      
+
     - name: Set up Git
       run: |
         git config --global user.name "Mamadou Sadio"
@@ -28,14 +28,15 @@ jobs:
           IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
           NEW_PATCH_VERSION=$((VERSION_PARTS[3]+1))
           NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.${VERSION_PARTS[2]}.$NEW_PATCH_VERSION"
-          echo "::set-output name=versioned_tag::$NEW_TAG"
         else
           NEW_TAG="0.0.0.1"
-          echo "::set-output name=versioned_tag::$NEW_TAG"
         fi
 
-    - name: Request manual deployment approval
-      uses: trstringer/manual-approval@v1
+        echo "::set-output name=versioned_tag::$NEW_TAG"
+
+    - name: Create Manual Approval Issue
+      uses: toppulous/create-manual-approval-issue@v1
+
       with:
         token: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
         message: "Please approve the deployment to staging"
