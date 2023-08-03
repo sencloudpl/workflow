@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -22,64 +22,52 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build
-    outputs:
-      deployment-confirmed: ${{ steps.confirmation.outputs.confirmed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Ask for staging deployment confirmation
+      - name: Ask for staging merging
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        id: confirmation
         run: |
-          echo "Do you want to deploy to the staging environment? (YES/NO)"
+          echo "Do you want to merge to staging environment? (YES/NO)"
           read -r confirmation
 
           if [[ $confirmation == "YES" ]]; then
-            echo "Staging deployment is confirmed."
-            echo "confirmed=YES" >> $GITHUB_ENV
+            echo "Staging deployment is approved."
+            echo "YES" >> $GITHUB_ENV
           else
-            echo "Staging deployment is not confirmed."
-            echo "confirmed=NO" >> $GITHUB_ENV
+            echo "Staging deployment is not approved."
+            echo "NO" >> $GITHUB_ENV
           fi
 
   staging-approval:
     runs-on: ubuntu-latest
+    environment: 'Staging'
     needs:
+      - build
       - staging-check
-    if: needs.staging-check.outputs.deployment-confirmed == 'YES'
+    if: needs.staging-check.outputs.approved == 'YES'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Create Deployment
-        id: create_deployment
+      - name: Ask for staging deployment approval
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "Creating deployment..."
-          response=$(curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/deployments \
-            -d '{"ref": "refs/heads/main", "environment": "staging"}')
-          echo "::set-output name=deployment_id::$(echo $response | jq '.id')"
+          echo "Do you want to deploy to staging environment? (YES/NO)"
+          read -r confirmation
 
-      - name: Ask for deployment approval
-        if: always()  # Always run this step, even if previous steps fail
-        run: |
-          deployment_id=${{ steps.create_deployment.outputs.deployment_id }}
-          echo "Deployment created. Link: https://github.com/${{ github.repository }}/deployments/${deployment_id}"
-          echo "Please manually approve the deployment by visiting the link above and clickng 'Approve'."
-
-  merge-to-staging:
-    runs-on: ubuntu-latest
-    needs:
-      - staging-approval
-    if: needs.staging-check.outputs.deployment-confirmed == 'YES' && needs.staging-approval.result == 'success'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+          if [[ $confirmation == "YES" ]]; then
+            echo "Staging deployment is approved."
+            echo "YES" >> $GITHUB_ENV
+          else
+            echo "Staging deployment is not approved."
+            echo "NO" >> $GITHUB_ENV
+            exit 0
+          fi
 
       - name: Merge main into staging
+        if: env.APPROVED == 'YES'
         run: |
           echo Start merge,
           git checkout staging
