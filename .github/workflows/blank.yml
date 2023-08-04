@@ -101,6 +101,6 @@ jobs:
           body="This PR merges the latest changes from main into the staging branch."
           head="staging"
           base="main"
-          hub api -X POST "/repos/${{ github.repository }}/pulls" -H "Accept: application/vnd.github.v3+json" -d "{\"title\":\"$title\",\"body\":\"$body\",\"head\":\"$head\",\"base\":\"$base\"}"
+          hub pr create -m "$title" -b "$body" -h "$head" -b "$base"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
