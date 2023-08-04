@@ -71,20 +71,23 @@ jobs:
             exit 0
           fi
 
-      - name: Fetch the remote changes
-        run: git fetch origin
-
-      - name: Merge main into staging
-        if: ${{ needs.build.outputs.latest_tag }} != '0.0.0' && env.deploy_approval == 'YES'
+      - name: Create Pull Request
+        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
         run: |
-          echo Start merge,
-
-          # Set up Git for the runner environment (again inside the 'staging-approval' job)
+          # Set up Git for the runner environment (if not already configured)
           git config user.name "${{ github.actor }}"
           git config user.email "devmodou@gmail.com"
 
+          # Fetch the remote changes
+          git fetch origin
+
+          # Check out the staging branch
           git checkout staging
+
+          # Merge the main branch into staging
           git merge origin/main --no-edit --allow-unrelated-histories
+
+          # Push the merged changes to the staging branch on the remote origin repository
           git push origin staging
 
           # Get the new version from the build job output
@@ -93,4 +96,4 @@ jobs:
 
           # Tag the merge commit with the new version
           git tag "$version" "${{ github.sha }}"
-          git push origin --tags
+          git push origin
