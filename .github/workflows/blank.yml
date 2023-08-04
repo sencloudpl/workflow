@@ -94,6 +94,17 @@ jobs:
           git tag "$version" "${{ github.sha }}"
           git push origin --tags
 
+      - name: Check if hub is installed
+        run: |
+          if ! command -v hub &> /dev/null; then
+            echo "hub command is not installed."
+            echo "You need to install hub: https://github.com/github/hub"
+            exit 1
+          else
+            echo "hub command is installed."
+          fi
+
+
       - name: Create Pull Request
         if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
         run: |
