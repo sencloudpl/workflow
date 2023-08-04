@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      deploy_approval:
-        description: 'Approve deployment to staging environment'
-        required: true
-        default: 'YES'
 
 jobs:
   build:
@@ -57,8 +51,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          deploy_approval: "YES" # Replace this with your desired value, e.g., "YES" or "NO"
         run: |
           deploy_approval=${{ env.deploy_approval }}
 
@@ -71,23 +68,22 @@ jobs:
             exit 0
           fi
 
-      - name: Create Pull Request
+      - name: Fetch the remote changes
+        run: git fetch origin
+
+      - name: Merge main into staging
         if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
         run: |
-          # Set up Git for the runner environment (if not already configured)
+          # Set up Git for the runner environment (if not already set)
           git config user.name "${{ github.actor }}"
           git config user.email "devmodou@gmail.com"
 
           # Fetch the remote changes
           git fetch origin
 
-          # Check out the staging branch
+          # Merge main into staging
           git checkout staging
-
-          # Merge the main branch into staging
           git merge origin/main --no-edit --allow-unrelated-histories
-
-          # Push the merged changes to the staging branch on the remote origin repository
           git push origin staging
 
           # Get the new version from the build job output
@@ -96,4 +92,15 @@ jobs:
 
           # Tag the merge commit with the new version
           git tag "$version" "${{ github.sha }}"
-          git push origin
+          git push origin --tags
+
+      - name: Create Pull Request
+        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+        run: |
+          title="Merge main into staging"
+          body="This PR merges the latest changes from main into the staging branch."
+          head="staging"
+          base="main"
+          hub api -X POST "/repos/${{ github.repository }}/pulls" -H "Accept: application/vnd.github.v3+json" -d "{\"title\":\"$title\",\"body\":\"$body\",\"head\":\"$head\",\"base\":\"$base\"}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
