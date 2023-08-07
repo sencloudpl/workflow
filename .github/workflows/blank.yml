@@ -59,69 +59,47 @@ jobs:
         exclude-workflow-initiator-as-approver: false
         additional-approved-words: ''
         additional-denied-words: ''
-        # steps:
-        #   - name: Checkout code
-        #     uses: actions/checkout@v2
-          
-        #   - name: Set deploy_approval to NO
-        #     run: echo "NO" > deploy_approval.txt
+    
+    - name: Get approval decision
+      id: approval
+      run: echo "::set-output name=decision::${{ steps.manual_approval.outputs.decision }}"
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Store approval decision
+      run: echo "APPROVAL_DECISION=${{ steps.approval.outputs.decision }}" >> $GITHUB_ENV
 
-        #   - name: Ask for staging deployment approval
-        #     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        #     env:
-        #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        #       PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-        #     run: |
-        #       deploy_approval=$(cat deploy_approval.txt)
+    - name: Use approval decision
+      run: |
+        if [[ "${APPROVAL_DECISION}" == "yes" ]]; then
+          echo "Deployment approved. Proceeding with deployment steps."
+          # Ajoutez ici les étapes pour le déploiement
+        else
+          echo "Deployment not approved. Skipping deployment."
+        fi
 
-        #       if [[ "$deploy_approval" == "YES" ]]; then
-        #         echo "Staging deployment is approved."
-        #         echo "Proceeding with the deployment..."
-                
-        #         # Update the deploy_approval status to "YES" in the pull request
-        #         curl -X POST \
-        #           -H "Authorization: token $GITHUB_TOKEN" \
-        #           -d '{
-        #             "event": "APPROVE"
-        #           }' \
-        #           "https://api.github.com/repos/sencloudpl/workflow/pulls/$PULL_REQUEST_NUMBER/reviews"
-
-        #       else
-        #         echo "Staging deployment is not approved."
-        #         echo "Waiting for approval or timeout..."
-        #         # Sleep for 15 seconds
-        #         sleep 15
-
-        #         # Check if the approval is still not received
-        #         if [[ "$deploy_approval" != "YES" ]]; then
-        #           echo "Approval not received within the specified time."
-        #           echo "Skipping the staging deployment..."
-        #           exit 0
-        #         fi
-        #       fi
             
 
-  create-pull-request:
-    needs:
-      - staging-approval
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create Pull Request
-        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
-        run: |
-          # Récupérer le nom de la branche actuelle
-          CURRENT_BRANCH=$(git branch --show-current)
+  # create-pull-request:
+  #   needs:
+  #     - staging-approval
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Create Pull Request
+  #       if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+  #       run: |
+  #         # Récupérer le nom de la branche actuelle
+  #         CURRENT_BRANCH=$(git branch --show-current)
             
-          # Créer la Pull Request en utilisant l'API GitHub
-          curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -d '{
-              "title": "Ma nouvelle Pull Request",
-              "head": "staging",
-              "base": "main",
-              "body": "Description de la Pull Request"
-            }' \
-            "https://api.github.com/repos/sencloudpl/workflow/pulls"
+  #         # Créer la Pull Request en utilisant l'API GitHub
+  #         curl -X POST \
+  #           -H "Authorization: token $GITHUB_TOKEN" \
+  #           -d '{
+  #             "title": "Ma nouvelle Pull Request",
+  #             "head": "staging",
+  #             "base": "main",
+  #             "body": "Description de la Pull Request"
+  #           }' \
+  #           "https://api.github.com/repos/sencloudpl/workflow/pulls"
 
       # - name: Fetch the remote changes
       #   run: git fetch origin
