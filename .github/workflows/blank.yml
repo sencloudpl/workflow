@@ -71,28 +71,28 @@ jobs:
       - name: Fetch the remote changes
         run: git fetch origin
 
-      # - name: Merge main into staging
-      #   if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
-      #   run: |
-      #     # Set up Git for the runner environment (if not already set)
-      #     git config user.name "${{ github.actor }}"
-      #     git config user.email "devmodou@gmail.com"
+      - name: Merge main into staging
+        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+        run: |
+          # Set up Git for the runner environment (if not already set)
+          git config user.name "${{ github.actor }}"
+          git config user.email "devmodou@gmail.com"
 
-      #     # Fetch the remote changes
-      #     git fetch origin
+          # Fetch the remote changes
+          git fetch origin
 
-      #     # Merge main into staging
-      #     git checkout staging
-      #     git merge origin/main --no-edit --allow-unrelated-histories
-      #     git push origin staging
+          # Merge main into staging
+          git checkout staging
+          git merge origin/main --no-edit --allow-unrelated-histories
+          git push origin staging
 
-      #     # Get the new version from the build job output
-      #     version="${{ needs.build.outputs.new_version }}"
-      #     echo "New version: $version"
+          # Get the new version from the build job output
+          version="${{ needs.build.outputs.new_version }}"
+          echo "New version: $version"
 
-      #     # Tag the merge commit with the new version
-      #     git tag "$version" "${{ github.sha }}"
-      #     git push origin --tags
+          # Tag the merge commit with the new version
+          git tag "$version" "${{ github.sha }}"
+          git push origin --tags
 
 
       - name: Create Pull Request
