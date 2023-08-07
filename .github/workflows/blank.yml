@@ -47,10 +47,13 @@ jobs:
     environment: 'Staging'
     needs:
       - build
-    timeout-minutes: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Record start time
+        id: start_time
+        run: echo "::set-output name=time::$(date +%s)"
 
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -75,6 +78,28 @@ jobs:
           else
             echo "Staging deployment is not approved."
             echo "Waiting for approval or timeout..."
+
+            # Calculate elapsed time
+            current_time=$(date +%s)
+            start_time=${{ steps.start_time.outputs.time }}
+            elapsed_time=$((current_time - start_time))
+
+            # Check if timeout (15 seconds) has passed
+            if [[ $elapsed_time -ge 15 ]]; then
+              echo "Timeout reached. Skipping the staging deployment..."
+              exit 0
+            fi
+
+            # Sleep for 1 second before next check
+            sleep 1
+
+            # Check if the approval is still not received
+            if [[ "$deploy_approval" != "YES" ]]; then
+              echo "Approval not received within the specified time."
+              echo "Skipping the staging deployment..."
+              exit 0
+            fi
+          fi
             
 
       - name: Create Pull Request
