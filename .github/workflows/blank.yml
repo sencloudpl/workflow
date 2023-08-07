@@ -49,9 +49,8 @@ jobs:
       - build
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -64,35 +63,45 @@ jobs:
             echo "Proceeding with the deployment..."
           else
             echo "Staging deployment is not approved."
-            echo "Skipping the staging deployment..."
-            exit 0
+            echo "Waiting for approval or timeout..."
+            
+            # Sleep for a specified amount of time (e.g., 1 hour = 3600 seconds)
+            sleep 15
+            
+            # Check if the approval is still not received
+            if [[ "$deploy_approval" != "YES" ]]; then
+              echo "Approval not received within the specified time."
+              echo "Skipping the staging deployment..."
+              exit 0
+            fi
           fi
 
-      - name: Fetch the remote changes
-        run: git fetch origin
 
-      - name: Merge main into staging
-        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
-        run: |
-          # Set up Git for the runner environment (if not already set)
-          git config user.name "${{ github.actor }}"
-          git config user.email "devmodou@gmail.com"
+      # - name: Fetch the remote changes
+      #   run: git fetch origin
 
-          # Fetch the remote changes
-          git fetch origin
+      # - name: Merge main into staging
+      #   if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+      #   run: |
+      #     # Set up Git for the runner environment (if not already set)
+      #     git config user.name "${{ github.actor }}"
+      #     git config user.email "devmodou@gmail.com"
 
-          # Merge main into staging
-          git checkout staging
-          git merge origin/main --no-edit --allow-unrelated-histories
-          git push origin staging
+      #     # Fetch the remote changes
+      #     git fetch origin
 
-          # Get the new version from the build job output
-          version="${{ needs.build.outputs.new_version }}"
-          echo "New version: $version"
+      #     # Merge main into staging
+      #     git checkout staging
+      #     git merge origin/main --no-edit --allow-unrelated-histories
+      #     git push origin staging
 
-          # Tag the merge commit with the new version
-          git tag "$version" "${{ github.sha }}"
-          git push origin --tags
+      #     # Get the new version from the build job output
+      #     version="${{ needs.build.outputs.new_version }}"
+      #     echo "New version: $version"
+
+      #     # Tag the merge commit with the new version
+      #     git tag "$version" "${{ github.sha }}"
+      #     git push origin --tags
 
 
       - name: Create Pull Request
