@@ -71,47 +71,45 @@ jobs:
       - name: Fetch the remote changes
         run: git fetch origin
 
-      - name: Merge main into staging
-        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
-        run: |
-          # Set up Git for the runner environment (if not already set)
-          git config user.name "${{ github.actor }}"
-          git config user.email "devmodou@gmail.com"
+      # - name: Merge main into staging
+      #   if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+      #   run: |
+      #     # Set up Git for the runner environment (if not already set)
+      #     git config user.name "${{ github.actor }}"
+      #     git config user.email "devmodou@gmail.com"
 
-          # Fetch the remote changes
-          git fetch origin
+      #     # Fetch the remote changes
+      #     git fetch origin
 
-          # Merge main into staging
-          git checkout staging
-          git merge origin/main --no-edit --allow-unrelated-histories
-          git push origin staging
+      #     # Merge main into staging
+      #     git checkout staging
+      #     git merge origin/main --no-edit --allow-unrelated-histories
+      #     git push origin staging
 
-          # Get the new version from the build job output
-          version="${{ needs.build.outputs.new_version }}"
-          echo "New version: $version"
+      #     # Get the new version from the build job output
+      #     version="${{ needs.build.outputs.new_version }}"
+      #     echo "New version: $version"
 
-          # Tag the merge commit with the new version
-          git tag "$version" "${{ github.sha }}"
-          git push origin --tags
-
-      - name: Check if hub is installed
-        run: |
-          if ! command -v hub &> /dev/null; then
-            echo "hub command is not installed."
-            echo "You need to install hub: https://github.com/github/hub"
-            exit 1
-          else
-            echo "hub command is installed."
-          fi
+      #     # Tag the merge commit with the new version
+      #     git tag "$version" "${{ github.sha }}"
+      #     git push origin --tags
 
 
       - name: Create Pull Request
         if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
         run: |
-          title="Merge main into staging"
-          body="This PR merges the latest changes from main into the staging branch."
-          head="staging"
-          base="main"
-          hub pr create -m "$title" -b "$body" -h "$head" -b "$base"
+          # Récupérer le nom de la branche actuelle
+          CURRENT_BRANCH=$(git branch --show-current)
+          
+          # Créer la Pull Request en utilisant l'API GitHub
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{
+              "title": "Ma nouvelle Pull Request",
+              "head": "staging",
+              "base": "main",
+              "body": "Description de la Pull Request"
+            }' \
+            "https://api.github.com/repos/sencloudpl/workflow/pulls"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
