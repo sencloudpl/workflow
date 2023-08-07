@@ -49,11 +49,12 @@ jobs:
       - build
     steps:
     - uses: trstringer/manual-approval@v1
+      timeout-minutes: 1
       with:
         secret: ${{ github.TOKEN }}
         approvers: sencloudpl,MamadouSadio
         minimum-approvals: 1
-        issue-title: "Deploying v1.3.5 to prod from staging"
+        issue-title: "Deploying to staging from main"
         issue-body: "Please approve or deny the deployment of version v1.3.5."
         exclude-workflow-initiator-as-approver: false
         additional-approved-words: ''
@@ -100,30 +101,27 @@ jobs:
         #       fi
             
 
-      # - name: Create Pull Request
-      #   if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
-      #   run: |
-      #     # Récupérer le nom de la branche actuelle
-      #     CURRENT_BRANCH=$(git branch --show-current)
-            
-      #     # Créer la Pull Request en utilisant l'API GitHub
-      #     curl -X POST \
-      #       -H "Authorization: token $GITHUB_TOKEN" \
-      #       -d '{
-      #         "title": "Ma nouvelle Pull Request",
-      #         "head": "staging",
-      #         "base": "main",
-      #         "body": "Description de la Pull Request"
-      #       }' \
-      #       "https://api.github.com/repos/sencloudpl/workflow/pulls"
-
-  next-job:
+  create-pull-request:
     needs:
       - staging-approval
     runs-on: ubuntu-latest
     steps:
-      - name: Next job step
-        run: echo "This is the next job."
+      - name: Create Pull Request
+        if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
+        run: |
+          # Récupérer le nom de la branche actuelle
+          CURRENT_BRANCH=$(git branch --show-current)
+            
+          # Créer la Pull Request en utilisant l'API GitHub
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -d '{
+              "title": "Ma nouvelle Pull Request",
+              "head": "staging",
+              "base": "main",
+              "body": "Description de la Pull Request"
+            }' \
+            "https://api.github.com/repos/sencloudpl/workflow/pulls"
 
       # - name: Fetch the remote changes
       #   run: git fetch origin
