@@ -50,6 +50,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      
+      - name: Set deploy_approval to NO
+        run: echo "NO" > deploy_approval.txt
 
       - name: Ask for staging deployment approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -57,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          deploy_approval=${{ env.deploy_approval }}
+          deploy_approval=$(cat deploy_approval.txt)
 
           if [[ "$deploy_approval" == "YES" ]]; then
             echo "Staging deployment is approved."
@@ -103,7 +106,13 @@ jobs:
             }' \
             "https://api.github.com/repos/sencloudpl/workflow/pulls"
 
-
+  next-job:
+    needs:
+      - staging-approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Next job step
+        run: echo "This is the next job."
 
       # - name: Fetch the remote changes
       #   run: git fetch origin
