@@ -47,6 +47,7 @@ jobs:
     environment: 'Staging'
     needs:
       - build
+    timeout-minutes: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -75,16 +76,6 @@ jobs:
             echo "Staging deployment is not approved."
             echo "Waiting for approval or timeout..."
             
-            # Sleep for 15 seconds
-            sleep 15
-            
-            # Check if the approval is still not received
-            if [[ "$deploy_approval" != "YES" ]]; then
-              echo "Approval not received within the specified time."
-              echo "Skipping the staging deployment..."
-              exit 0
-            fi
-          fi
 
       - name: Create Pull Request
         if: ${{ needs.build.outputs.latest_tag != '0.0.0' && env.deploy_approval == 'YES' }}
