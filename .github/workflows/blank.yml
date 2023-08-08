@@ -48,34 +48,37 @@ jobs:
     needs:
       - build
     steps:
-    - uses: trstringer/manual-approval@v1
-      timeout-minutes: 1
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: sencloudpl,MamadouSadio
-        minimum-approvals: 1
-        issue-title: "Deploying to staging from main"
-        issue-body: "Please approve or deny the deployment of version v1.3.5."
-        exclude-workflow-initiator-as-approver: false
-        additional-approved-words: ''
-        additional-denied-words: ''
-    
-    - name: Get approval decision
-      id: approval
-      run: echo "::set-output name=decision::${{ steps.manual_approval.outputs.decision }}"
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-    - name: Store approval decision
-      run: echo "APPROVAL_DECISION=${{ steps.approval.outputs.decision }}" >> $GITHUB_ENV
+      - name: Manual Workflow Approval
+        id: manual_approval  
+        uses: trstringer/manual-approval@v1.9.0
+        timeout-minutes: 1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: sencloudpl,MamadouSadio
+          minimum-approvals: 1
+          issue-title: "Deploying to staging from main"
+          issue-body: "Please approve or deny the deployment of version v1.3.5."
+          exclude-workflow-initiator-as-approver: false
+          additional-approved-words: ''
+          additional-denied-words: ''
 
-    - name: Use approval decision
-      run: |
-        if [[ "${APPROVAL_DECISION}" == "yes" ]]; then
-          echo "Deployment approved. Proceeding with deployment steps."
-          # Ajoutez ici les étapes pour le déploiement
-        else
-          echo "Deployment not approved. Skipping deployment."
-        fi
+      - name: Get approval decision
+        id: approval
+        run: echo "::set-output name=decision::${{ steps.manual_approval.outputs.decision }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Store approval decision
+        run: echo "APPROVAL_DECISION=${{ steps.approval.outputs.decision }}" >> $GITHUB_ENV
+
+      - name: Use approval decision
+        run: |
+          if [[ "${APPROVAL_DECISION}" == "yes" ]]; then
+            echo "Deployment approved. Proceeding with deployment steps."
+            # Ajoutez ici les étapes pour le déploiement
+          else
+            echo "Deployment not approved. Skipping deployment."
+          fi
+
 
             
 
