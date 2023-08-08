@@ -59,8 +59,8 @@ jobs:
           issue-title: "Deploying to staging from main"
           issue-body: "Please approve or deny the deployment of version v1.3.5."
           exclude-workflow-initiator-as-approver: false
-          additional-approved-words: ''
-          additional-denied-words: ''
+          additional-approved-words: 'approved,lgtm,yes'
+          additional-denied-words: 'denied,no'
 
       - name: Get approval decision
         id: approval
